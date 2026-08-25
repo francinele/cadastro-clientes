@@ -1,10 +1,11 @@
 import re
 import sqlite3
 import tkinter as tk
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from tkinter import messagebox, ttk
 
 BANCO = "cadastros.db"
+FUSO_BRASILIA = timezone(timedelta(hours=-3))
 
 CORES = {
     "principal": "#008C85",
@@ -19,6 +20,10 @@ CORES = {
 # Banco de dados
 def conectar():
     return sqlite3.connect(BANCO)
+
+
+def data_hora_atual():
+    return datetime.now(FUSO_BRASILIA).strftime("%Y-%m-%d %H:%M:%S")
 
 
 def criar_tabela():
@@ -39,11 +44,14 @@ def criar_tabela():
         if "data_cadastro" not in nomes_colunas:
             conexao.execute("ALTER TABLE pessoas ADD COLUMN data_cadastro TEXT")
 
-        conexao.execute("""
+        conexao.execute(
+            """
             UPDATE pessoas
-            SET data_cadastro = datetime('now', 'localtime')
+            SET data_cadastro = ?
             WHERE data_cadastro IS NULL
-        """)
+            """,
+            (data_hora_atual(),),
+        )
 
 
 # Validação
@@ -145,7 +153,7 @@ def cadastrar():
         return
 
     try:
-        data_cadastro = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        data_cadastro = data_hora_atual()
         with conectar() as conexao:
             conexao.execute(
                 """
